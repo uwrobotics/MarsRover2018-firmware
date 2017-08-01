@@ -1,5 +1,7 @@
 *~
 
+.vscode
+
 build/
 *.bin
 *.lst

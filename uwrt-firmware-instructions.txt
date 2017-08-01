@@ -1,0 +1,23 @@
+UWRT Firmware Development - STM32F091 / NUCLEO-F091RC
+
+1. Download source code from github: https://github.com/uwrobotics/MarsRover2018-firmware
+
+2. Download toolchain (gcc and make)
+	For Ubuntu 16.04
+		sudo apt-get install gcc-arm-none-eabi
+		
+	For Windows
+		download make for windows: http://gnuwin32.sourceforge.net/packages/make.htm (choose Complete package, except sources)
+		download gcc-arm-none-eabi for windows: https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads (windows 32 bit)
+		add gcc .exe files to path (usually C:\Program Files (x86)\GNU Tools ARM Embedded\<version>\bin)
+	
+3. change directory into app/blinky
+4. run make
+5. Deploy onto board
+	For Ubuntu 16.04
+		Coming soon (TM) - going to use openOCD
+	
+	For Windows
+		Download st-link utility: http://www.st.com/en/development-tools/st-link-v2.html
+		connect USB to nucleo board and open st-link utility
+		load code by going to Target->Program and browse for .bin file

@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "cmsis_nvic.h": "c",
-        "cmsis.h": "c",
-        "stm32f0xx.h": "c",
-        "stm32f0xx_hal.h": "c"
-    }
-}
