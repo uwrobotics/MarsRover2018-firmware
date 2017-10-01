@@ -23,6 +23,15 @@ Firmware for the 2018 University of Waterloo Mars Rover. Will contain:
     - download [gcc-arm-none-eabi for windows](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) (windows 32 bit)
     - add gcc .exe files to path (usually `C:\Program Files (x86)\GNU Tools ARM Embedded\<version>\bin`)
 	
+	For Mac
+    - Open Command Line
+    - Install Homebrew if not installed 
+    	$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    - Download auto-run script, which will auto install <arm-none-eabi-gcc> with latest version
+    	$ brew tap ARMmbed/homebrew-formulae
+    - Install <arm-none-eabi-gcc> via HomeBrew
+    	$ brew install arm-none-eabi-gcc
+	
 3. change directory into app/blinky
 
     `cd MarsRover2018-firmware/app/blinky`
@@ -40,4 +49,7 @@ Firmware for the 2018 University of Waterloo Mars Rover. Will contain:
     
     - Download [st-link utility](http://www.st.com/en/development-tools/st-link-v2.html)
     - connect USB to nucleo board and open st-link utility
-	- load code by going to Target->Program and browse for .bin file
+    - load code by going to Target->Program and browse for .bin file
+	
+	For Mac
+    - Drag and Drop .bin file into NODE_F091RC disk (Will show up like other usb devices after connecting)
