@@ -16,21 +16,22 @@ Firmware for the 2018 University of Waterloo Mars Rover. Will contain:
 2. Download toolchain (gcc and make)
    
    For Ubuntu 16.04
-    - sudo apt-get install gcc-arm-none-eabi
+    - `sudo apt-get install gcc-arm-none-eabi`
 		
 	For Windows
     - download [make for windows](http://gnuwin32.sourceforge.net/packages/make.htm) (choose Complete package, except sources)
     - download [gcc-arm-none-eabi for windows](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads) (windows 32 bit)
     - add gcc .exe files to path (usually `C:\Program Files (x86)\GNU Tools ARM Embedded\<version>\bin`)
+    - add make.exe to path (usually `C:\Program Files (x86)\GnuWin32\bin`)
 	
 	For Mac
     - Open Command Line
     - Install Homebrew if not installed 
-    	$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    	`/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
     - Download auto-run script, which will auto install <arm-none-eabi-gcc> with latest version
-    	$ brew tap ARMmbed/homebrew-formulae
+    	`brew tap ARMmbed/homebrew-formulae`
     - Install <arm-none-eabi-gcc> via HomeBrew
-    	$ brew install arm-none-eabi-gcc
+    	`brew install arm-none-eabi-gcc`
 	
 3. change directory into app/blinky
 
