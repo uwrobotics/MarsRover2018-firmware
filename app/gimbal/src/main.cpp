@@ -8,7 +8,6 @@ Serial pc(USBTX, USBRX);
 
 void servoMoveTest()
 {
-    int val;
     int period = 20000;
     float dutyCycle = 0.28;
     float ms;
@@ -43,7 +42,6 @@ void inputResponse()
 // main() runs in its own thread in the OS
 int main() 
 {
-    uint8_t buffer;
     servoMoveTest();
 }
 
