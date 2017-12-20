@@ -1,15 +1,49 @@
 #include "mbed.h"
+#include "pot.h"
 
-DigitalOut led1(LED1);
+// DigitalOut led1(LED1);
+Pot pot(A0);
 PwmOut yawActuator(PWM_OUT);
+Serial pc(USBTX, USBRX);
 
-// main() runs in its own thread in the OS
-int main() {
-    yawActuator.period_ms(1);
-    yawActuator.write(0.2);
-    while (true) {
-        led1 = !led1;
+void servoMoveTest()
+{
+    int val;
+    int period = 20000;
+    float dutyCycle = 0.28;
+    float ms;
+    yawActuator.period_us(period);
+    yawActuator.write(dutyCycle);
+    while(1)
+    {
+        ms = (period*1000)*dutyCycle;
+       
+        // dutyCycle -= 0.3-0.01;
+
+        pc.printf("Write %.3f\r\n", ms);
+        wait_ms(10);
+    }
+}
+
+void potReadTest()
+{
+    Pot pot(A0);
+    int val;
+    while(1)
+    {
+        val = pot.readPos();
+        pc.printf("pot %04x\r\n", val);
         wait(0.01);
     }
+}
+void inputResponse()
+{
+    pc.printf("Read data\r\n");
+}
+// main() runs in its own thread in the OS
+int main() 
+{
+    uint8_t buffer;
+    servoMoveTest();
 }
 
