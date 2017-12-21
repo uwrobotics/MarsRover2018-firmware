@@ -5,8 +5,9 @@ DigitalOut led1(LED1);
 // main() runs in its own thread in the OS
 int main() {
     while (true) {
+        uint32_t timetowait = 1;
         led1 = !led1;
-        wait(0.5);
+        wait(timetowait);
     }
 }
 

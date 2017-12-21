@@ -1,0 +1,11 @@
+Clock     =   48 MHz
+Prescaler =   24
+TQ        =   24 / 48e6 = 500 ns
+Bit Rate  =   125 kbps (8 us)
+# TQ      =   8 us / 500 ns = 16
+# TQ      =   1 + TS1 + TS2
+TS1       =   12
+TS2       =   3
+SP        =   (1 + TS1) / (# TQ) = 13 / 16 = 0.8125 (should be near 80%)
+
+https://vector.com/portal/medien/cmc/application_notes/AN-AND-1-106_Basic_CAN_Bit_Timing.pdf
