@@ -1,26 +1,36 @@
 #include "mbed.h"
 #include "pot.h"
+#include "servo.h"
 
 // DigitalOut led1(LED1);
+int period = 20000;
+
 Pot pot(A0);
-PwmOut yawActuator(PWM_OUT);
+Servo servo(PWM_OUT, period);
 Serial pc(USBTX, USBRX);
 
-void servoMoveTest()
+void nonContinousTest()
 {
-    int period = 20000;
-    float dutyCycle = 0.28;
-    float ms;
-    yawActuator.period_us(period);
-    yawActuator.write(dutyCycle);
+    // servo.init();
+    servo.setDegreePerUs(0.08);
+    float angle = -60;
+    float diffAngle = 5;
     while(1)
     {
-        ms = (period*1000)*dutyCycle;
-       
-        // dutyCycle -= 0.3-0.01;
-
-        pc.printf("Write %.3f\r\n", ms);
-        wait_ms(10);
+        servo.writeDegrees(angle);
+        pc.printf("Write %.3f", angle);
+        
+        angle += diffAngle;
+        if(angle > 60)
+        {
+            angle = 60;
+            diffAngle = -5;
+        } else if (angle < -60)
+        {
+            angle = -60;
+            diffAngle = 5;
+        }
+        wait_ms(20);
     }
 }
 
@@ -35,13 +45,10 @@ void potReadTest()
         wait(0.01);
     }
 }
-void inputResponse()
-{
-    pc.printf("Read data\r\n");
-}
+
 // main() runs in its own thread in the OS
 int main() 
 {
-    servoMoveTest();
+    nonContinousTest();
 }
 
