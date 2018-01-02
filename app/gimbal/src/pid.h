@@ -1,5 +1,5 @@
-#ifndef PID
-#define PID
+#ifndef PID_H
+#define PID_H
 
 #include "mbed.h"
 
@@ -11,9 +11,20 @@ class Pid
 public:
 
     /**
-     * @brief      Constructor
+     * @brief 
+     * 
+     * @param minControl 
+     * @param maxControl 
      */
     Pid(float minControl, float maxControl);
+
+    /**
+     * @brief 
+     * 
+     * @param currentVal 
+     * @param targetVal 
+     * @return float 
+     */
     float controller(float currentVal, float targetVal);
 private:
     bool b_freshController;

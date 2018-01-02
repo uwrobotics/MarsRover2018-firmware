@@ -1,6 +1,6 @@
 #include "servo.h"
 
-Servo::Servo(PinName pwmPin, int periodInUs)
+Servo::Servo(PinName pwmPin, uint16_t periodInUs)
 {
     m_pin = pwmPin;
     m_periodInUs = periodInUs;
@@ -13,7 +13,7 @@ void Servo::setDegreePerUs(float degree)
     m_degreePerUs = degree;
 }
 
-void Servo::setPeriodInUs(int periodInUs)
+void Servo::setPeriodInUs(uint16_t periodInUs)
 {
     m_periodInUs = periodInUs;
 }
@@ -24,8 +24,7 @@ void Servo::writeDegrees(float angleInDegrees)
     writeMicroseconds(onTime);
 }
 
-void Servo::writeMicroseconds(int onTime)
+void Servo::writeMicroseconds(uint16_t pulseWidthInUs)
 {
-    float dutyCycle = onTime/m_periodInUs;
-    p_servoObj->write(dutyCycle);
+    p_servoObj->pulsewidth_us(pulseWidthInUs);
 }

@@ -1,5 +1,5 @@
-#ifndef PID
-#define PID
+#ifndef SERVO_H
+#define SERVO_H
 
 #include "mbed.h"
 #include <memory>
@@ -17,13 +17,13 @@ public:
      * 
      * @param pwmPin 
      */
-    Servo(PinName pwmPin, int periodInUs);
+    Servo(PinName pwmPin, uint16_t periodInUs);
     /**
      * @brief 
      * 
-     * @param onTime 
+     * @param pulseWitdh
      */
-    void writeMicroseconds(int onTime);
+    void writeMicroseconds(uint16_t pulseWitdhInUs);
     /**
      * @brief 
      * 
@@ -41,9 +41,9 @@ public:
      * 
      * @param periodInUs 
      */
-    void setPeriodInUs(int periodInUs);
+    void setPeriodInUs(uint16_t periodInUs);
 private:
-    int m_periodInUs;
+    uint16_t m_periodInUs;
     float m_degreePerUs;
     std::unique_ptr<PwmOut> p_servoObj;
     PinName m_pin;

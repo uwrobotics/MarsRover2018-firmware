@@ -17,7 +17,7 @@ float Pid::controller(float currentVal, float targetVal)
     float timeStep;
 
     // Calculate proportional, integral and differential errors 
-    error = currentVal - targetVal;
+    error = abs(currentVal - targetVal);
     if(b_freshController)
     {
         b_freshController = false;
