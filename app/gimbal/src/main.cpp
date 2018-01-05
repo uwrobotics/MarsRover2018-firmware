@@ -15,17 +15,19 @@ static const float DEGREE_PER_US = 0.08; // From manufacturere: 0.08 degrees per
 static const float MIN_PID_CONTROL = 0;
 static const float MAX_PID_CONTROL = 1;
 
+// Initialise objects
 Pot pot(A0); //potentiometer
-Servo servoA(D5, PERIOD); //non-continuous servo
-Servo servoB(D6, PERIOD); //non-continuous servo
+Servo servoA(D6, PERIOD); //non-continuous servo
+Servo servoB(D5, PERIOD); //non-continuous servo
 Pid pid(MIN_PID_CONTROL, MAX_PID_CONTROL); //pid controller
 Serial pc(USBTX, USBRX); //serial object
 
 
 /**
- * @brief 
+ * @brief Moves non-continous servo to desired angle. 
+ * Only needs to be called once
  * 
- * @param degrees 
+ * @param degrees -> servo target in degrees
  */
 void writeNonContinuous(float degrees)
 {
@@ -35,11 +37,17 @@ void writeNonContinuous(float degrees)
 }
 
 /**
- * @brief 
+ * @brief Moves continuous servo to desired location. 
+ * The function is non-blocking, so it should be called
+ * as often until it reaches target. Each call should have
+ * a delay between them.
  * 
- * @param degrees 
+ * @param degrees -> servo target in degrees
+ * @return int16_t -> -1 : failed to write
+ *                     0 : not reached target
+ *                     1 : reached target
  */
-void writeContinuous(float degrees)
+int16_t writeContinuous(float degrees)
 {
     // Limit angle range between 5 and 300
     degrees = degrees > 300 ? 300 : (degrees < 5 ? 5 : degrees);
@@ -47,11 +55,15 @@ void writeContinuous(float degrees)
     float control;
     uint16_t readIn;
     uint16_t pulseWidth;
-    uint16_t target = (uint16_t)(degrees*READING_PER_DEGREE);
-    uint16_t error = 0xFFFF;
+    uint16_t target;
+    uint16_t error;
     
+    target = (uint16_t)(degrees*READING_PER_DEGREE);
+    readIn = pot.readPos();
+    error = target - readIn;
+
     // Move the servo until close enough to the destination (1 degree)
-    while (abs(error)>READING_PER_DEGREE)
+    if (abs(error)>READING_PER_DEGREE)
     {
         readIn = pot.readPos();
         pc.printf("pot %04x\r\n", readIn);
@@ -62,19 +74,28 @@ void writeContinuous(float degrees)
         else
             pulseWidth = (uint16_t)(MIN_PULSE_WIDTH_NEG + PULSE_WIDTH_RANGE*control);
         servoB.writeMicroseconds(pulseWidth);
+        return 0;
+    } else
+    {
+        servoB.writeMicroseconds(STOP_PULSE_WIDTH);
+        return 1;
     }
-
-    //Stop servo from moving
-    servoB.writeMicroseconds(1465);
 }
 
 void continuousTest()
 {
     while(1)
     {
-        writeContinuous(200);
+        while (writeContinuous(200) == 0)
+        {
+            wait_ms(2);
+        }
         wait_ms(100);
-        writeContinuous(10);
+        
+        while (writeContinuous(10) == 0)
+        {
+            wait_ms(2);
+        }
         wait_ms(100);
     }
 }
@@ -116,6 +137,7 @@ void potReadTest()
 int main() 
 {
     servoA.setDegreePerUs(DEGREE_PER_US);
-    nonContinuousTest();
+    // nonContinuousTest();
+    continuousTest();
 }
 
