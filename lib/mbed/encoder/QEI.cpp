@@ -128,7 +128,7 @@
  */
 #include "QEI.h"
  
-00131 QEI::QEI(PinName channelA,
+QEI::QEI(PinName channelA,
          PinName channelB,
          PinName index,
          int pulsesPerRev,
@@ -166,26 +166,26 @@
  
 }
  
-00169 void QEI::reset(void) {
+void QEI::reset(void) {
  
     pulses_      = 0;
     revolutions_ = 0;
  
 }
  
-00176 int QEI::getCurrentState(void) {
+int QEI::getCurrentState(void) {
  
     return currState_;
  
 }
  
-00182 int QEI::getPulses(void) {
+int QEI::getPulses(void) {
  
     return pulses_;
  
 }
  
-00188 int QEI::getRevolutions(void) {
+int QEI::getRevolutions(void) {
  
     return revolutions_;
  

@@ -45,7 +45,8 @@ MBED_SRC_C = $(wildcard $(MBED)/hal/*.c) \
 			 $(wildcard $(MBED)/targets/TARGET_STM/TARGET_STM32F0/TARGET_NUCLEO_F091RC/device/*.c)
 
 MBED_SRC_CPP = $(wildcard $(MBED)/drivers/*.cpp) \
-			   $(wildcard $(MBED)/platform/*.cpp) 
+			   $(wildcard $(MBED)/platform/*.cpp) \
+			   $(wildcard $(MBED)/encoder/*.cpp) 
 
 
 MBED_INC = -I$(MBED) \

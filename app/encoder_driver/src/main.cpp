@@ -13,22 +13,31 @@
 
 
 #include "mbed.h"
-#include "QEI.h"
+#include "encoder/QEI.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "canlib.h"
 #include "pins.h"
 
-#define ABSOLUTE
+#ifdef __cplusplus
+}
+#endif
+
+//#define ABSOLUTE
 #define INCREMENTAL
 
 Serial pc(USBTX, USBRX);
 uint32_t enc_ID = 400;
+uint32_t t_on, t_off;
 uint16_t width, position;
 volatile uint8_t data;
-//To-Do : define pins A, B and I depending on hardware setup
+//To-Do : define pins A, B and I depending on hardware setup 
 
 
-
-QEI wheel (A, B, I, 0048)
+QEI wheel (A0, A1, A2, 48);
 
 int main(){
 
@@ -47,18 +56,23 @@ int main(){
 		CANLIB_Tx_SendData(data);
 	}
 #endif
-#elif ABSOLUTE
+#ifdef ABSOLUTE
 	while (1){
 		//To-Do calculate t_on from pwm output signal from encoder.
 		//12 bit PWM
 		width = ((t_on *4098)/(t_on + t_off)) -1;
 		if(width<=4094)
-			position = x;
-		if (x = 4096)
+			position = width;
+		if (width == 4096)
 			position = 4095;
 
 		CANLIB_Tx_SendData(position);
 	}
 #endif
 }
+/*
+#ifdef __cplusplus
+}
+#endif
 
+*/
