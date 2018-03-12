@@ -48,7 +48,7 @@ Firmware for the 2018 University of Waterloo Mars Rover. Will contain:
 	
 	For Windows
     
-    - Download [st-link utility](http://www.st.com/en/development-tools/st-link-v2.html)
+    - Download [st-link utility](www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-programmers/stsw-link004.html)
     - connect USB to nucleo board and open st-link utility
     - load code by going to Target->Program and browse for .bin file
 	
