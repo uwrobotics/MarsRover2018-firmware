@@ -33,11 +33,14 @@ Serial pc(USBTX, USBRX);
 uint32_t enc_ID = 400;
 uint32_t t_on, t_off;
 uint16_t width, position;
+float duty_cycle;
 volatile uint8_t data;
+int uint8_t count;
 //To-Do : define pins A, B and I depending on hardware setup 
 
 
 QEI wheel (A0, A1, A2, 48);
+PwmIn abs_enc (A4);
 
 int main(){
 
@@ -47,26 +50,37 @@ int main(){
 #ifdef INCREMENTAL
 	//Reset the relative encoder. #TODO add other calibration
 	void reset();
+	count =0;
 
 	while (1){
 		//Read Data from Encoder
-		data = wheel.getCurrentState();
+		position = wheel.getCurrentState();
+		count ++;
 
 		//Write data to CAN BUS
-		CANLIB_Tx_SendData(data);
+		if (count > 100){
+			CANLIB_Tx_SendData(data);
+			count =0;
+		}
+
 	}
 #endif
 #ifdef ABSOLUTE
 	while (1){
 		//To-Do calculate t_on from pwm output signal from encoder.
 		//12 bit PWM
-		width = ((t_on *4098)/(t_on + t_off)) -1;
+		//250Hz freq -> Period T = 0.4 ms
+		width = int(abs_enc.dutycycle*4098) -1;
+		//width = ((t_on *4098)/(t_on + t_off)) -1;
 		if(width<=4094)
 			position = width;
 		if (width == 4096)
 			position = 4095;
 
-		CANLIB_Tx_SendData(position);
+		if (count > 100){
+			CANLIB_Tx_SendData(position);
+			count =0;
+		}
 	}
 #endif
 }
