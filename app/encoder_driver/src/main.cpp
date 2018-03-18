@@ -35,32 +35,38 @@ uint32_t t_on, t_off;
 uint16_t width, position;
 float duty_cycle;
 volatile uint8_t data;
-int uint8_t count;
+
 //To-Do : define pins A, B and I depending on hardware setup 
 
 
 QEI wheel (A0, A1, A2, 48);
-PwmIn abs_enc (A4);
+//PwmIn abs_enc (A4);
 
 int main(){
+
+
 
 	if (CANLIB_Init(enc_ID, CANLIB_LOOPBACK_OFF) != 0){
 		pc.printf("init failed \r\n");
 	}
 #ifdef INCREMENTAL
 	//Reset the relative encoder. #TODO add other calibration
-	void reset();
+
+	uint8_t count;
 	count =0;
+	void reset();
 
 	while (1){
+		pc.printf("While loop is looping");
 		//Read Data from Encoder
 		position = wheel.getCurrentState();
 		count ++;
 
 		//Write data to CAN BUS
 		if (count > 100){
+			//pc.printf("Test data %d \n", data);
 			CANLIB_Tx_SendData(data);
-			count =0;
+			count = 0;
 		}
 
 	}
