@@ -30,14 +30,16 @@ extern "C" {
 #define INCREMENTAL
 
 Serial pc(USBTX, USBRX);
-uint32_t enc_ID[] = {300, 301, 302, 303, 304};
+uint32_t enc_ID[5] = {300, 301, 302, 303, 304};
+uint32_t motor_ID[5] = {400, 401, 402, 403, 404};
 
 uint32_t t_on, t_off;
 uint16_t width, position;
 float duty_cycle;
 volatile uint16_t data[5];
 
-volatile uint32_t pwm_duty;
+volatile uint32_t pwm_duty[5];
+volatile uint8_t data_ready = 0;
 
 //QEI library used to read from incremental encoders.
 //To-Do : define pins A, B and I depending on hardware setup 
@@ -76,7 +78,18 @@ void motor_control(int16_t speed)
  */
 void CANLIB_Rx_OnMessageReceived(void)
 {
-    flag = 1;
+
+    switch(CANLIB_Rx_GetSenderID())
+    {
+        // Expect frame format to be:
+        // Bytes 0-3: Azimuth axis PWM input
+        // Byte 4-7: Inclination axis PWM input
+        case motor_ID[0]:
+            pwm_duty[0] = CANLIB_Rx_GetAsFloat(motor_ID[0]);
+            data_ready = 1;
+            break;
+
+
     pwm_duty = CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);
 }
 
@@ -85,6 +98,11 @@ int main(){
 
 	if (CANLIB_Init(enc_ID, CANLIB_LOOPBACK_OFF) != 0){
 		pc.printf("init failed \r\n");
+	}
+
+	if (CANLIB_AddFilter(motor_ID[0]) != 0)
+    {
+        Error_Handler();
 	}
 
 	uint8_t count;
@@ -129,8 +147,8 @@ int main(){
 			count = 0;
 		}
 
-		if (flag){
-			pwm_gen()
+		if (data_ready){
+			pwm_gen();
 		}
 
 	}
