@@ -53,4 +53,4 @@ Firmware for the 2018 University of Waterloo Mars Rover. Will contain:
     - load code by going to Target->Program and browse for .bin file
 	
 	For Mac
-    - Drag and Drop .bin file into NODE_F091RC disk (Will show up like other usb devices after connecting)
+    - Drag and Drop .bin file into NODE_F091RC disk (Will show up like other usb devices after connecting) or run `cp build/blinky_out.bin /Volumes/NODE_F091RC/`
