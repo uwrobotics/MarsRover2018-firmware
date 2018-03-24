@@ -59,14 +59,14 @@ QEI wheel_3 (A0, A1, A2, 48);
 
 /*
  *	Initialize pins
- */
+ */ 
 void initPins() {
-	for (int i = 0; i < NUM_MOTORS; i++) {
-		pwm_out[i] = new PwmOut(pwm_pins[i]);
-		dir_out[i] = new DigitalOut(dir_pins[i]);
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        pwm_out[i] = new PwmOut(pwm_pins[i]);
+        dir_out[i] = new DigitalOut(dir_pins[i]);
 
-		// Add Encoder Pin Initialization
-	}
+        // Add Encoder Pin Initialization
+    }
 }
 
 /*
@@ -95,16 +95,16 @@ void motorControl(int16_t speed, PwmOut pwm_pin, DigitalOut dir_pin)
  */
 void CANLIB_Rx_OnMessageReceived(void)
 {
-	uint16_t sender_ID = CANLIB_Rx_GetSenderID();
+    uint16_t sender_ID = CANLIB_Rx_GetSenderID();
     
-	for (int i = 0; i < NUM_MOTORS; i++) {
-		if (motor_ID[i] == sender_ID) {
-			pwm_duty[i] = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0) * 255.0;
-			data_ready = 1;
-			led1 = 1;
-			break;
-		}
-	}
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        if (motor_ID[i] == sender_ID) {
+            pwm_duty[i] = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0) * 255.0;
+            data_ready = 1;
+            led1 = 1;
+            break;
+        }
+    }
 }
 
 /*
@@ -115,67 +115,67 @@ void errorHandler() {
 }
 
 int main(){
-	initPins();
+    initPins();
 
-	// Initialize with the first encoder value. Value updated before sending each time
-	if (CANLIB_Init(enc_ID[0], CANLIB_LOOPBACK_OFF) != 0) {
-		errorHandler();
-	}
+    // Initialize with the first encoder value. Value updated before sending each time
+    if (CANLIB_Init(enc_ID[0], CANLIB_LOOPBACK_OFF) != 0) {
+        errorHandler();
+    }
 
-	for (int i = 0; i < NUM_MOTORS; i++) {
-		if (CANLIB_AddFilter(motor_ID[i]) != 0) {
-			errorHandler();
-		}
-	}
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        if (CANLIB_AddFilter(motor_ID[i]) != 0) {
+            errorHandler();
+        }
+    }
 
-	uint8_t count = 0;
+    uint8_t count = 0;
 
-	// void reset();
+    // void reset();
 
-	while (true){
+    while (true){
 
-		count++;
-		//Read Data from Encoder
-		// data[0] = wheel_1.getCurrentState();
-		// data[1] = wheel_1.getCurrentState();
-		// data[2] = wheel_1.getCurrentState();
+        count++;
+        //Read Data from Encoder
+        // data[0] = wheel_1.getCurrentState();
+        // data[1] = wheel_1.getCurrentState();
+        // data[2] = wheel_1.getCurrentState();
 
-		// width = int(abs_enc_1.dutycycle*4098) -1;
-		
-		// //width = ((t_on *4098)/(t_on + t_off)) -1;
-		// if(width <= 4094)
-		// 	position = width;
-		// if (width == 4096)
-		// 	position = 4095;
+        // width = int(abs_enc_1.dutycycle*4098) -1;
+        
+        // //width = ((t_on *4098)/(t_on + t_off)) -1;
+        // if(width <= 4094)
+        // 	position = width;
+        // if (width == 4096)
+        // 	position = 4095;
 
-		// data[3] = position;
+        // data[3] = position;
 
-		// width = int(abs_enc_2.dutycycle*4098) -1;
-		// //width = ((t_on *4098)/(t_on + t_off)) -1;
-		// if(width <= 4094)
-		// 	position = width;
-		// if (width == 4096)
-		// 	position = 4095;
+        // width = int(abs_enc_2.dutycycle*4098) -1;
+        // //width = ((t_on *4098)/(t_on + t_off)) -1;
+        // if(width <= 4094)
+        // 	position = width;
+        // if (width == 4096)
+        // 	position = 4095;
 
-		// data[4] = position;
-		
-		//Write data to CAN BUS
-		if (count > 100){
-			for (int i =0; i< 5; i++){
-				CANLIB_ChangeID(enc_ID[i]);
-				// CANLIB_Tx_SendData(data[i]);				
-			}
+        // data[4] = position;
+        
+        //Write data to CAN BUS
+        if (count > 100){
+            for (int i =0; i< 5; i++){
+                CANLIB_ChangeID(enc_ID[i]);
+                // CANLIB_Tx_SendData(data[i]);				
+            }
 
-			count = 0;
-		}
+            count = 0;
+        }
 
-		if (data_ready) {
-			for (int i = 0; i < NUM_MOTORS; i++) {
-				motorControl(pwm_duty[i], *pwm_out[i], *dir_out[i]);
-			}
-			data_ready = 0;
-		}
-	}
+        if (data_ready) {
+            for (int i = 0; i < NUM_MOTORS; i++) {
+                motorControl(pwm_duty[i], *pwm_out[i], *dir_out[i]);
+            }
+            data_ready = 0;
+        }
+    }
 }
 
 #ifdef __cplusplus
