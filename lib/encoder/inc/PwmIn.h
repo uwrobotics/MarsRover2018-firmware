@@ -58,6 +58,12 @@ public:
      */
     float dutycycle();
 
+    /** Returns the current state
+     *
+     * @returns the current state as a 12 bit value
+     */
+    int get12BitState();
+
 protected:        
     void rise();
     void fall();
