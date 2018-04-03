@@ -2,29 +2,39 @@
 
 Servo::Servo(PinName pwmPin, uint16_t periodInUs)
 {
-    m_pin = pwmPin;
-    m_periodInUs = periodInUs;
-    p_servoObj.reset(new PwmOut(m_pin));
-    p_servoObj->period_us(m_periodInUs);
+    this-> m_pin = pwmPin;
+    this-> m_periodInUs = periodInUs;
+    this->p_servoObj.reset(new PwmOut(m_pin));
+    this->p_servoObj->period_us(m_periodInUs);
 }
 
-void Servo::setDegreePerUs(float degree)
-{
-    m_degreePerUs = degree;
-}
 
 void Servo::setPeriodInUs(uint16_t periodInUs)
 {
-    m_periodInUs = periodInUs;
+    this->m_periodInUs = periodInUs;
 }
 
-void Servo::writeDegrees(float angleInDegrees)
+void Servo::writeDegreesNCON(float angleInDegrees)
 {
-    float onTime = 1500 + angleInDegrees/m_degreePerUs;
-    writeMicroseconds(onTime);
+  float onTime ;
+  if(angleInDegrees > NCONSEV_MAXDEG ){
+    angleInDegrees = NCONSEV_MAXDEG ;
+  }
+  
+  if(angleInDegrees < NCONSEV_MINDEG ){
+    angleInDegrees = NCONSEV_MINDEG ;
+  }
+  
+  if(angleInDegrees>=0){
+	onTime = 1300 + angleInDegrees*NCONSEV_USDEG_POS;
+  }
+  else{
+	onTime = 1300 + angleInDegrees*NCONSEV_USDEG_NEG;
+  }
+   writeMicroseconds(onTime);
 }
 
 void Servo::writeMicroseconds(uint16_t pulseWidthInUs)
 {
-    p_servoObj->pulsewidth_us(pulseWidthInUs);
+    this->p_servoObj->pulsewidth_us(pulseWidthInUs);
 }

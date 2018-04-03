@@ -5,20 +5,16 @@
 
 // HSR-1425CR
 // Define constants
-static const uint16_t STOP_PULSE_WIDTH = 1465;
-static const uint16_t MIN_PULSE_WIDTH_POS = 1490; 
-static const uint16_t MIN_PULSE_WIDTH_NEG = 1430;
-static const float PULSE_WIDTH_RANGE = 87.5;
-static const float READING_PER_DEGREE = 13.20968;
+ 
 static const uint16_t PERIOD = 2500; // 2500us seems to give less jitter
-static const float DEGREE_PER_US = 0.08; // From manufacturere: 0.08 degrees per us
-static const float MIN_PID_CONTROL = 0;
-static const float MAX_PID_CONTROL = 1;
+static const float MIN_PID_CONTROL = -1500;
+static const float MAX_PID_CONTROL = 989;
 
 // Initialise objects
+
 Pot pot(A0); //potentiometer
-Servo servoA(D6, PERIOD); //non-continuous servo
-Servo servoB(D5, PERIOD); //non-continuous servo
+Servo servoA(D9, PERIOD); //continuous servo
+Servo servoB(D11, PERIOD); //non-continuous servo
 Pid pid(MIN_PID_CONTROL, MAX_PID_CONTROL); //pid controller
 Serial pc(USBTX, USBRX); //serial object
 
@@ -29,12 +25,7 @@ Serial pc(USBTX, USBRX); //serial object
  * 
  * @param degrees -> servo target in degrees
  */
-void writeNonContinuous(float degrees)
-{
-    // Limit angle range between -60 and 60
-    degrees = degrees > 60 ? 60 : (degrees < -60 ? -60 : degrees);
-    servoA.writeDegrees(degrees); 
-}
+
 
 /**
  * @brief Moves continuous servo to desired location. 
@@ -47,97 +38,82 @@ void writeNonContinuous(float degrees)
  *                     0 : not reached target
  *                     1 : reached target
  */
-int16_t writeContinuous(float degrees)
+
+
+void nonContinuousTest(float angle)
 {
-    // Limit angle range between 5 and 300
-    degrees = degrees > 300 ? 300 : (degrees < 5 ? 5 : degrees);
+	servoB.writeDegreesNCON(angle);
+}
+
+float potReadTest()
+{   
+   while(1){
     
-    float control;
-    uint16_t readIn;
-    uint16_t pulseWidth;
-    uint16_t target;
-    uint16_t error;
+	float val = (pot.readPos()/100)/1.87;
+	pc.printf("The Angle %f\r\n", val);
+   }
     
-    target = (uint16_t)(degrees*READING_PER_DEGREE);
-    readIn = pot.readPos();
-    error = target - readIn;
-
-    // Move the servo until close enough to the destination (1 degree)
-    if (abs(error)>READING_PER_DEGREE)
-    {
-        readIn = pot.readPos();
-        pc.printf("pot %04x\r\n", readIn);
-        control = pid.controller(readIn, target);
-        error = target - readIn;
-        if(error > 0)
-            pulseWidth = (uint16_t)(MIN_PULSE_WIDTH_POS + PULSE_WIDTH_RANGE*control);
-        else
-            pulseWidth = (uint16_t)(MIN_PULSE_WIDTH_NEG + PULSE_WIDTH_RANGE*control);
-        servoB.writeMicroseconds(pulseWidth);
-        return 0;
-    } else
-    {
-        servoB.writeMicroseconds(STOP_PULSE_WIDTH);
-        return 1;
-    }
 }
-
-void continuousTest()
-{
-    while(1)
-    {
-        while (writeContinuous(200) == 0)
-        {
-            wait_ms(2);
-        }
-        wait_ms(100);
-        
-        while (writeContinuous(10) == 0)
-        {
-            wait_ms(2);
-        }
-        wait_ms(100);
-    }
+/*void test(){
+	bool check=false;
+	while(1){
+        float timenow= pid.controller(151, pot);
+		pc.printf("The time %f\r\n", timenow);
+	    wait_ms(100);
+		}
+}*/
+void continuous(float angle){
+	bool check =false;
+	while(!check){
+		
+		float x = pid.controller(angle, pot);
+			
+	    servoA.writeMicroseconds(1510+x); 
+		wait_ms(100);
+		servoA.writeMicroseconds(1510);
+        wait_ms(10);
+		
+		if (x == 0){check=true;}
+		//pc.printf("The Angle %f\r\n", val);
+		//pc.printf("The X %f\r\n", x);
+	}
 }
-
-void nonContinuousTest()
-{
-    float angle = -60;
-    float diffAngle = 1;
-    while(1)
-    {
-        writeNonContinuous(angle);
-        
-        angle += diffAngle;
-        if(angle > 60)
-        {
-            angle = 60;
-            diffAngle = -1;
-        } else if (angle < -60)
-        {
-            angle = -60;
-            diffAngle = 1;
-        }
-        wait_ms(100);
-    }
-}
-
-void potReadTest()
-{
-    uint16_t val;
-    while(1)
-    {
-        val = pot.readPos();
-        pc.printf("pot %04x\r\n", val);
-        wait(0.01);
-    }
-}
-
-// main() runs in its own thread in the OS
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "canlib.h"
+#include "pins.h"
+volatile float TangleCON;   
+volatile float TangleNCON;
+// main() runs in its own thread in the OS 1470 backwards and 1570 forwards
 int main() 
 {
-    servoA.setDegreePerUs(DEGREE_PER_US);
-    // nonContinuousTest();
-    continuousTest();
+  
+    if (CANLIB_Init(20, 1) != 0)
+    {
+        pc.printf("init failed\r\n");
+    }
+    if (CANLIB_AddFilter(410) != 0)
+    {
+        pc.printf("add filter failed\r\n");
+    }
+	
+   // while(true){servoA.writeMicroseconds(1554);wait(2.5); servoA.writeMicroseconds(1510); potReadTest();} //Testing not of any use.
+
+  continuous(TangleCON);
+  nonContinuousTest(TangleNCON);
+ // potReadTest();
+  
+  return 0;
 }
 
+void CANLIB_Rx_OnMessageReceived(void)
+{   
+	TangleCON= CANLIB_Rx_GetAsInt(CANLIB_INDEX_0);
+    
+	TangleNCON= CANLIB_Rx_GetAsInt(CANLIB_INDEX_1); 
+	
+}
+#ifdef __cplusplus
+}
+#endif

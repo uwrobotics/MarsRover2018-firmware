@@ -2,6 +2,8 @@
 #define PID_H
 
 #include "mbed.h"
+#include "pot.h"
+#include <math.h>
 
 /**
  * @brief      Class for pid controller
@@ -17,7 +19,6 @@ public:
      * @param maxControl 
      */
     Pid(float minControl, float maxControl);
-
     /**
      * @brief 
      * 
@@ -25,17 +26,22 @@ public:
      * @param targetVal 
      * @return float 
      */
-    float controller(float currentVal, float targetVal);
+    float controller(float targetVal, Pot pot);
+	
+	//~Pid();
 private:
-    bool b_freshController;
-    float m_prevError;
+    
+	bool first_time;
+	float m_intergralsum;
+    float m_prevdiffError;
+	float m_diffError;
     float m_intError;
+    float m_pError;
     float m_minControl;
     float m_maxControl;
-    const float s_kp = 0.0001;
-    const float s_ki = 0;
-    const float s_kd = 0;
-    const float s_timeStep = 0.02;
+    const float s_kp = 35.46155556;
+    const float s_ki = 0.00;
+    const float s_kd = 1.12;
     Timer m_timer;
 };
 #endif
