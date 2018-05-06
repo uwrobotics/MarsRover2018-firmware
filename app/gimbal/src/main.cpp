@@ -88,7 +88,7 @@ volatile float TangleNCON;
 // main() runs in its own thread in the OS 1470 backwards and 1570 forwards
 int main() 
 {
-  
+ while(true){
     if (CANLIB_Init(20, 1) != 0)
     {
         pc.printf("init failed\r\n");
@@ -103,7 +103,7 @@ int main()
   continuous(TangleCON);
   nonContinuousTest(TangleNCON);
  // potReadTest();
-  
+ }
   return 0;
 }
 
