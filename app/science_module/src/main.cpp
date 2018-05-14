@@ -21,10 +21,10 @@ extern "C" {
 #include "pins.h"
 
 #define NUM_MODULES     4
-#define NUM_PINS        NUM_MODULES/2
 
 Serial pc(USBTX, USBRX);
 
+// TODO: make enum or something
 static uint32_t elevator_filter_ID  = 420;
 static uint32_t drill_filter_ID     = 421;
 static uint32_t temp_filter_ID      = 422;
@@ -40,24 +40,25 @@ static uint16_t can_id;
 static float pwm_duty;
 
 // TODO: fix the pin numbers; current ones are guesses
-PwmOut* elevator_pwm_pin = new PwnOut(PB_13);
+PwmOut* elevator_pwm_pin = new PwmOut(PB_13);
 PwmOut* drill_pwm_pin = new PwmOut(PB_14);
 PwmOut* temp_pwm_pin = new PwmOut(PB_15);
-PwmOut flap_pwm_pin = new PwmOut(PB_16);
+PwmOut* flap_pwm_pin = new PwmOut(PB_15);
 
-DigitalOut elevator_dir_pin = new DigitalOut(PC_6);
-DigitalOut drill_dir_pin = new DigitalOut(PC_7);
-DigitalOut temp_dir_pin = new DigitalOut(PC_8);
-DigitalOut flap_dir_pin = new DigitalOut(PC_9);
+DigitalOut* elevator_dir_pin = new DigitalOut(PC_6);
+DigitalOut* drill_dir_pin = new DigitalOut(PC_7);
+DigitalOut* temp_dir_pin = new DigitalOut(PC_8);
+DigitalOut* flap_dir_pin = new DigitalOut(PC_9);
 
-static void* module_vector[NUM_PINS] = {evelator_pwm_pin,
-                                        drill_pwm_pin,
-                                        temp_pwm_pin,
-                                        flap_pwm_pin,
-                                        elevator_dir_pin
-                                        drill_dir_pin,
-                                        temp_dir_pin,
-                                        flap_dir_pin};
+static PwmOut* pwm_out_vector[NUM_MODULES] = {elevator_pwm_pin,
+                                                drill_pwm_pin,
+                                                temp_pwm_pin,
+                                                flap_pwm_pin};
+
+static DigitalOut* digital_out_vector[NUM_MODULES] = {elevator_dir_pin,
+                                                drill_dir_pin,
+                                                temp_dir_pin,
+                                                flap_dir_pin};
 
 /*
  *  Controls for each instrument.
@@ -65,8 +66,8 @@ static void* module_vector[NUM_PINS] = {evelator_pwm_pin,
  */
 void control_modules(float pwm_duty, uint16_t module_id)
 {
-    module_vector[module_id]->write(fabs(pwm_duty));
-    module_vector[module_id + NUM_MODULES] = (pwm_duty >= 0);
+    pwm_out_vector[module_id]->write(fabs(pwm_duty));
+    *digital_out_vector[module_id] = (pwm_duty >= 0);
 }
 
 /*
