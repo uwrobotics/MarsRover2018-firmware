@@ -18,16 +18,32 @@ extern "C" {
 #define SW_POS_10    9
 
 Serial pc(USBTX, USBRX);
-const int Number_of_pins=3;
-const int nod_ID=200;
-const PinName pins_we_want[Number_of_pins]={PC_10, PC_11, PC_12};// Please put pins in array in increasing order basically the ones at the bottom comes first and the top one being last. 
+const int NUM_LIM_SW=3;
+const int LIM_SW_ID=200;
+
+/* limit switch order will be
+ * 0: Turntable index
+ * 1: Empty (use pin tied to ground)
+ * 2: Shoulder lower
+ * 3: shoulder upper
+ * 4: elbow lower
+ * 5: elbow upper
+ * 6: wrist pitch lower
+ * 7: wrist pitch upper
+ * 8: wrist roll index
+ * 9: empty
+ */
+
+//TOOD: fill array with pins the limit switches are on
+const PinName sw_pins[NUM_LIM_SW]={PC_10, PC_11, PC_12};
 DigitalOut led1(LED2);
-static uint16_t switch_status=0; 
-// MAX pins for using 1 byte is 32 pins so 0<Number_of_pins<=32;  
-InterruptIn *SW [Number_of_pins];
+volatile uint16_t switch_status=0; 
+
+// MAX pins for using 1 byte is 32 pins so 0<NUM_LIM_SW<=32;  
+InterruptIn *SW [NUM_LIM_SW];
 void flip_SW1();void flip_SW2();void flip_SW3();//void flip_SW4();void flip_SW5();void flip_SW6();void flip_SW7();void flip_SW8();void flip_SW9();void flip_SW10();
 void intial_status_finder(); 
-void (*fun_pointer[Number_of_pins]) ()= {flip_SW1, flip_SW2, flip_SW3};//, flip_SW4, flip_SW5, flip_SW6, flip_SW7, flip_SW8, flip_SW9, flip_SW10};
+void (*fun_pointer[NUM_LIM_SW]) ()= {flip_SW1, flip_SW2, flip_SW3};//, flip_SW4, flip_SW5, flip_SW6, flip_SW7, flip_SW8, flip_SW9, flip_SW10};
 uint16_t temp;
 
 int main() {
@@ -37,22 +53,23 @@ int main() {
 	 
     pc.printf("start listening\r\n");
     
-    if (CANLIB_Init(nod_ID,CANLIB_LOOPBACK_ON) != 0)
+    if (CANLIB_Init(LIM_SW_ID,CANLIB_LOOPBACK_ON) != 0)
     {
         pc.printf("init failed\r\n");
     }
      
-    for(int i=0; i<Number_of_pins; i++){
+    for(int i=0; i<NUM_LIM_SW; i++){
 	 
-     	SW[i] = new InterruptIn(pins_we_want[i]);
+     	SW[i] = new InterruptIn(sw_pins[i]);
 		   
-		SW[i]->rise(fun_pointer[i]); SW[i]->fall(fun_pointer[i]);
+		SW[i]->rise(fun_pointer[i]); 
+        SW[i]->fall(fun_pointer[i]);
 	}
    
     intial_status_finder();
 	
     // TESTING
-    if (CANLIB_AddFilter(nod_ID) != 0)
+    if (CANLIB_AddFilter(LIM_SW_ID) != 0)
     {
         pc.printf("add filter failed\r\n");
     }
@@ -61,9 +78,9 @@ int main() {
 		if(temp!=switch_status){
 		    CANLIB_Tx_SetInt(switch_status, CANLIB_INDEX_0);
             CANLIB_Tx_SendData(CANLIB_DLC_FIRST_BYTE);
-		}
-		temp=switch_status;
-		wait_ms(100);
+		    temp=switch_status;
+        }
+		wait_ms(50); //run at 20Hz
     }
  }
 
@@ -108,7 +125,7 @@ void flip_SW10() {
 }*/
 
 void intial_status_finder(){
-	for(int i=0; i<Number_of_pins; i++){
+	for(int i=0; i<NUM_LIM_SW; i++){
 		
 		switch_status |= (SW[i]->read() << i);   
    }

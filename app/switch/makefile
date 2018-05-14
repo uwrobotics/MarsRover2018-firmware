@@ -8,4 +8,6 @@ PROJECT = switch_out
 
 #the folder the current app is in
 #HAS TO BE THE SAME NAME AS THE FOLDER THIS IS IN
-APP_FOLDER = switchnclude $(BASE_PATH)/makefile
+APP_FOLDER = switch
+
+include $(BASE_PATH)/makefile
