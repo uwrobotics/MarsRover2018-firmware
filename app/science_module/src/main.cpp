@@ -20,12 +20,13 @@ extern "C" {
 #include "canlib.h"
 #include "pins.h"
 
-#define NUM_MODULES 4
+#define NUM_MODULES         4
+#define INIT_VECTOR_SIZE    5
 
 Serial pc(USBTX, USBRX);
 I2C i2c(I2C_SDA, I2C_SCL);
 
-enum module_ids{
+typedef enum module_ids{
     science_module_pwm_filter   = 400,
     elevator_pwm_filter_ID      = 420,
     drill_pwm_filter_ID         = 421,
@@ -37,10 +38,10 @@ enum module_ids{
     temp_pwm_ID                 = 426,
     flap_pwm_ID                 = 427,
     
-    temp_humidity_filter_ID     = 501,
+    temp_humidity_sensor_val    = 501,
 
-    temp_humidity_sensor_read   = 600,
-};
+    temp_humidity_filter_ID     = 510,
+} module_ids_t;
 
 static bool can_write_pwm = false;
 static bool can_read_temp_sensor = false;
@@ -123,11 +124,17 @@ void CANLIB_Rx_OnMessageReceived(void)
             pwm_duty = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0);
             can_write_pwm = true;
             break;
-        case temp_humidity_sensor_read:
+        case temp_humidity_filter_ID:
             can_read_temp_sensor = true;
             break;
     }
 }
+
+module_ids_t init_modules[INIT_VECTOR_SIZE] = {elevator_pwm_filter_ID,
+                                                drill_pwm_filter_ID,
+                                                temp_pwm_filter_ID,
+                                                flap_pwm_filter_ID,
+                                                temp_humidity_filter_ID};
 
 int main()
 {
@@ -135,20 +142,24 @@ int main()
     float temp_reading;
     float humidity_reading;
     /*
-     * Initialize CAN
+     * Initialize CAN for pwm
      */
-    for(int i = 0; i < NUM_MODULES; i++)
+    if (CANLIB_Init(elevator_pwm_ID, CANLIB_LOOPBACK_OFF) != 0)
     {
-        if (CANLIB_Init(elevator_pwm_ID + i, CANLIB_LOOPBACK_OFF) != 0)
-        {
-            pc.printf("CAN Initialization Failed on PWM ID: %u \r\n", elevator_pwm_ID + i);
-        }
-        if (CANLIB_AddFilter(elevator_pwm_filter_ID + i) != 0)
-        {
-            pc.printf("CAN Add Filter Failed on Filter: %u \r\n", elevator_pwm_filter_ID + i);
-        } 
+        pc.printf("CAN Initialization Failed\r\n");
     }
 
+    for(int i = 0; i < INIT_VECTOR_SIZE; i++)
+    {
+        if (CANLIB_AddFilter(init_modules[i]) != 0)
+        {
+            pc.printf("CAN Add Filter Failed on Filter: %u \r\n", init_modules[i]);
+        }
+    }
+
+    /*
+     * Loop
+     */
     while(1)
     {
         if(can_write_pwm)
@@ -163,7 +174,7 @@ int main()
             humidity_reading = (float) ((temp_humidity_sensor_reading >> 8) & 0xFF);
 
             // CAN msg to PC
-            CANLIB_ChangeID(temp_humidity_filter_ID);
+            CANLIB_ChangeID(temp_humidity_sensor_val);
             CANLIB_Tx_SetFloat(temp_reading, CANLIB_INDEX_0);
             CANLIB_Tx_SetFloat(humidity_reading, CANLIB_INDEX_1);
             CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
