@@ -36,9 +36,14 @@ enum module_ids{
     drill_pwm_ID                = 425,
     temp_pwm_ID                 = 426,
     flap_pwm_ID                 = 427,
+    
+    temp_humidity_filter_ID     = 501,
+
+    temp_humidity_sensor_read   = 600,
 };
 
 static bool can_write_pwm = false;
+static bool can_read_temp_sensor = false;
 static uint16_t can_id;
 static float pwm_duty;
 
@@ -73,6 +78,37 @@ void control_modules(float pwm_duty, uint16_t module_id)
     *digital_out_vector[module_id] = (pwm_duty >= 0);
 }
 
+const char am2315_temp_humidity_sensor = 0xB8;
+
+/*
+ * Get temp/humidity sensor readings from i2c
+ */
+uint32_t get_temp_humidity_sensor_reading()
+{
+    char sensor_cmd[4] = {0};
+    uint32_t *sensor_data;
+    
+    // Host to sensor read temp and humidity data
+    sensor_cmd[0] = 0x03;
+    sensor_cmd[1] = 0x00;
+    sensor_cmd[2] = 0x04;
+    i2c.write(am2315_temp_humidity_sensor, sensor_cmd, 3);
+
+    // Tell sensor to prep sensor data
+    sensor_cmd[0] = 0x03;
+    sensor_cmd[1] = 0x04;
+    i2c.write(am2315_temp_humidity_sensor, sensor_cmd, 2);
+
+    wait(0.5);
+
+    // Read data from sensor
+    memset(sensor_cmd, 0, sizeof(sensor_cmd)/sizeof(sensor_cmd[0]));
+    i2c.read(am2315_temp_humidity_sensor, sensor_cmd, 4);
+
+    sensor_data = (uint32_t*) &sensor_cmd[0];
+    return *sensor_data;
+}
+
 /*
  *  Receives pwm data from CAN bus
  */
@@ -87,11 +123,17 @@ void CANLIB_Rx_OnMessageReceived(void)
             pwm_duty = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0);
             can_write_pwm = true;
             break;
+        case temp_humidity_sensor_read:
+            can_read_temp_sensor = true;
+            break;
     }
 }
 
 int main()
 {
+    uint32_t temp_humidity_sensor_reading;
+    float temp_reading;
+    float humidity_reading;
     /*
      * Initialize CAN
      */
@@ -114,9 +156,18 @@ int main()
             control_modules(pwm_duty, can_id % science_module_pwm_filter);
             can_write_pwm = false;
         }
+        if(can_read_temp_sensor)
         {
-            control_modules(pwm_duty, can_id % module_filter);
-            can_msg_received = false;
+            temp_humidity_sensor_reading = get_temp_humidity_sensor_reading();
+            temp_reading = (float) (temp_humidity_sensor_reading & 0xFF);
+            humidity_reading = (float) ((temp_humidity_sensor_reading >> 8) & 0xFF);
+
+            // CAN msg to PC
+            CANLIB_ChangeID(temp_humidity_filter_ID);
+            CANLIB_Tx_SetFloat(temp_reading, CANLIB_INDEX_0);
+            CANLIB_Tx_SetFloat(humidity_reading, CANLIB_INDEX_1);
+            CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
+            can_read_temp_sensor = false;
         }
     }
 }
