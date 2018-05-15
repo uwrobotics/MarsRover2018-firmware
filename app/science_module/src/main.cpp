@@ -1,14 +1,16 @@
 /**
   ******************************************************************************
   * @file    main.c
-  * @author  Kevin, Huo
+  * @author  Kevin Huo
   * @version V1.0
-  * @date    01-Februrary-2018
-  * @brief   Default main function.
+  * @date    13-May-2018
+  * @brief   Main function for science module.
   *
   *
-  * This file serves as a a PWM driver for the science module. It receives data
+  * This file serves as the driver for the science module. It receives data
   * from the CAN bus and generates an appropriate PWM signal for each module.
+  * Additionally, it reads sensor data and transmits through CAN when the 
+  * appropriate message is received.
   ******************************************************************************
 */
 #include "mbed.h"
