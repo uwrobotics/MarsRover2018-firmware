@@ -43,7 +43,7 @@ void CANLIB_Rx_OnMessageReceived(void)
         data_ready = true;
     }
     else if(LIM_SW_ID == sender_id) {
-        switches = CANLIB_Rx_GetAsUInt(CANLIB_INDEX_0);
+        switches = CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);
     }
 }
 
