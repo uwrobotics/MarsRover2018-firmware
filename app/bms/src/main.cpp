@@ -142,7 +142,7 @@ int main() {
         pc.printf("init failed\r\n");
     }
     Ticker tick;
-    tick.attach(send_can, 5.0); //send voltages over CAN every 5 seconds
+    tick.attach(send_can, 1.0); //send voltages over CAN every second
 
     const float VOLTAGE_THRESH = 0.2f;
     float lowest_cell_voltage = 10;
