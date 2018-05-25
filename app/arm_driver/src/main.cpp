@@ -33,7 +33,7 @@ enum ArmJoint
 };
 
 
-Serial pc(USBTX, USBRX);
+Serial pc(PC_10, PC_11);
 const uint32_t ENC_ID[NUM_MOTORS] = {300, 301, 302, 303, 304};
 const uint32_t MOTOR_ID[NUM_MOTORS] = {400, 401, 402, 403, 404};
 const uint32_t LIM_SW_ID = 200;
@@ -53,14 +53,16 @@ DigitalOut *dir_out[NUM_MOTORS];
 float freq = 50.0; // PWM Frequency [Hz]
 float period = 1 / freq;
 DigitalOut led1(PC_1);
+DigitalOut led2(PC_2);
 
 //QEI library used to read from incremental encoders.
 //To-Do : Determine the pins used for the encoders
-QEI turntable_inc(A0, A1, A2, 48);
-QEI wrist_pitch_inc(A0, A1, A2, 48);
-PwmIn wrist_roll_abs(A4);
-PwmIn shoulder_abs(A4);
-PwmIn elbow_abs(A5);
+//Pins and connectors correspond to Arm board rev_2
+QEI turntable_inc(PB_0, PB_1, PB_2, 48); //Connector J7
+QEI wrist_pitch_inc(PA_7, PC_4, PB_2, 48); // Connector J6
+PwmIn wrist_roll_abs(PA_6); // Connector J5
+PwmIn shoulder_abs(PA_3); // Connector J4
+PwmIn elbow_abs(PA_2); // Connector J3
 
 Ticker tick;
 
@@ -103,6 +105,8 @@ void encoderSend()
         CANLIB_ChangeID(ENC_ID[i]);
         CANLIB_Tx_SetUint(enc_data[i], CANLIB_INDEX_0);
         CANLIB_Tx_SendData(CANLIB_DLC_FOUR_BYTES);
+        //pc.printf("Encoder %d with data %d \n", ENC_ID[i], enc_data[i]);
+        led1 = !led1;
     }
 }
 
@@ -112,19 +116,22 @@ void encoderSend()
 void CANLIB_Rx_OnMessageReceived(void)
 {
     uint16_t sender_ID = CANLIB_Rx_GetSenderID();
-	
+	//led2 = !led2;
+
     //limit switch CAN message
 	if(sender_ID == LIM_SW_ID){
-		switches =  CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);	
+		switches =  CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);
+
 	}
-	
+
 	else{
 		sender_ID -= 400; //400 -> 0, 401 -> 1, etc.
 
 		// Received PWM value will be between -1 and 1
 		//switch_status=CANLIB_Rx_GetAsUint(CANLIB_INDEX_1);
 		pwm_duty[sender_ID] = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0);
-		data_ready[sender_ID] = true;
+		//pc.printf("PWM duty is %f from %d \n", pwm_duty[sender_ID], sender_ID); 
+        data_ready[sender_ID] = true;
 	}
 }
 /*
@@ -180,7 +187,7 @@ int main()
         pc.printf("add filter failed for limit switches\r\n");
 	}
 	
-	reset_arm();
+	//reset_arm();
 	
     while (true)
     {
@@ -203,7 +210,7 @@ int main()
             }
             data_ready[i] = false;
         }
-        wait_ms(50); //run at 20Hz
+        wait_ms(200); //run at 20Hz
     }
 }
 #ifdef __cplusplus
