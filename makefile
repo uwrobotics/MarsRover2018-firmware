@@ -14,7 +14,7 @@ LIB_PATH = $(BASE_PATH)/lib
 
 #os dependent code
 ifeq ($(OS),Windows_NT)
-REMOVE_PROGRAM = del /q
+REMOVE_PROGRAM = del /S  $(subst /,\,$(BASE_PATH))\*.o
 REMOVE_FOLDER = rmdir /s/q
 GCC_INC = -IC:/Program\ Files\ (x86)/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3/arm-none-eabi/include\
 
@@ -105,9 +105,11 @@ DEFINES = -DTARGET_STM -DTARGET_STM32F0 -DTARGET_NUCLEO_F091RC -DTARGET_STM32F09
 ifeq ($(OS),Windows_NT)
 CLEAN_PATH  = $(addsuffix ", $(addprefix ", $(subst /,\,$(OBJS))))
 CLEAN_FOLDER_PATH = "$(BUILD_PATH)"
+REMOVE_OBJS = $(REMOVE_PROGRAM)
 else
 CLEAN_PATH = $(BUILD_PATH) $(APP_PATH)/*.map $(OBJS)
 CLEAN_FOLDER_PATH =
+REMOVE_OBJS = $(REMOVE_PROGRAM) $(CLEAN_PATH)
 endif
 
 
@@ -147,6 +149,6 @@ $(PROJ_PATH).elf: $(OBJS)
 #    openocd -f $(OPENOCD_BOARD_DIR)/stm32f0discovery.cfg -f $(OPENOCD_PROC_FILE) -c "stm_flash `pwd`/$(PROJECT).bin" -c shutdown
 
 clean:
-	$(REMOVE_PROGRAM) $(CLEAN_PATH)
+	$(REMOVE_OBJS)
 	$(REMOVE_FOLDER) $(CLEAN_FOLDER_PATH)
 #"src\*.o" "$(HAL)\startup\*.o"
