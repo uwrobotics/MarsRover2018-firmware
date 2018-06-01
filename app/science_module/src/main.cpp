@@ -15,6 +15,7 @@
 */
 #include "mbed.h"
 #include "ec.h"
+#include "temperature.h"
 #include "servo.h"
 
 #ifdef __cplusplus
@@ -53,7 +54,7 @@ volatile float pwm_duty[NUM_MOTORS];
 volatile uint32_t flap_set;
 volatile bool flap_changed = false;
 
-float sen_temp;
+float sen_temp = 25; //initialize to 25 degree C
 float sen_humid;
 float sen_ec;
 
@@ -168,6 +169,7 @@ int main()
 
         if(can_read_ec_sensor)
         {
+            sen_ec = getEC(sen_temp);
             CANLIB_ChangeID(SENSOR_OUT_ID[EC_SENSOR]);
             CANLIB_Tx_SetFloat(sen_ec, CANLIB_INDEX_0);
             CANLIB_Tx_SendData(CANLIB_DLC_FOUR_BYTES);
@@ -175,11 +177,16 @@ int main()
         }
         if(can_read_temp_sensor)
         {
-            // CAN msg to PC
-            CANLIB_ChangeID(SENSOR_OUT_ID[TEMP_HUMID_SENSOR]);
-            CANLIB_Tx_SetFloat(sen_temp, CANLIB_INDEX_0);
-            CANLIB_Tx_SetFloat(sen_humid, CANLIB_INDEX_1);
-            CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
+            temp_hum_reading_t reading;
+            if(get_temp_humidity_sensor_reading(&reading)) {
+                sen_temp = reading.temperature;
+                sen_humid = reading.humidity;
+                // CAN msg to PC
+                CANLIB_ChangeID(SENSOR_OUT_ID[TEMP_HUMID_SENSOR]);
+                CANLIB_Tx_SetFloat(sen_temp, CANLIB_INDEX_0);
+                CANLIB_Tx_SetFloat(sen_humid, CANLIB_INDEX_1);
+                CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
+            }
             can_read_temp_sensor = false;
         }
         wait_ms(50); //run at 20Hz

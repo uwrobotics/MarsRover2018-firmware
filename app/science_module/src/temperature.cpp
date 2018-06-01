@@ -1,9 +1,6 @@
 
 #include "mbed.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "pins.h"
 #include "temperature.h"
@@ -92,7 +89,3 @@ bool get_temp_humidity_sensor_reading(temp_hum_reading_t* pReading)
     return true;
 }
 
-
-#ifdef __cplusplus
-}
-#endif
