@@ -14,6 +14,8 @@
   ******************************************************************************
 */
 #include "mbed.h"
+#include "ec.h"
+#include "servo.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,55 +24,62 @@ extern "C" {
 #include "canlib.h"
 #include "pins.h"
 
-#define NUM_MODULES         4
-#define INIT_VECTOR_SIZE    5
+#define FLAP_CLOSED 0.0
+#define FLAP_OPEN 0.3
 
-Serial pc(USBTX, USBRX);
-I2C i2c(I2C_SDA, I2C_SCL);
+enum ScienceMotors
+{
+    ELEVATOR = 0,
+    DRILL = 1,
+    PROBE = 2,
+    NUM_MOTORS
+};
 
-typedef enum module_ids{
-    science_module_pwm_filter   = 400,
-    elevator_pwm_filter_ID      = 420,
-    drill_pwm_filter_ID         = 421,
-    temp_pwm_filter_ID          = 422,
-    flap_pwm_filter_ID          = 423,
+enum ScienceSensors
+{
+    EC_SENSOR = 0,
+    TEMP_HUMID_SENSOR = 1,
+    NUM_SENSORS
+};
 
-    elevator_pwm_ID             = 424,
-    drill_pwm_ID                = 425,
-    temp_pwm_ID                 = 426,
-    flap_pwm_ID                 = 427,
-    
-    temp_humidity_sensor_val    = 501,
+const uint32_t MOTOR_ID[NUM_MOTORS] = {420, 421, 422};
+const uint32_t FLAP_ID = 423;
+const uint32_t READ_SENSOR_ID = 510;
+const uint32_t SENSOR_OUT_ID[NUM_SENSORS] = {500, 501};
 
-    temp_humidity_filter_ID     = 510,
-} module_ids_t;
+volatile bool can_read_temp_sensor = false;
+volatile bool can_read_ec_sensor = false;
+volatile float pwm_duty[NUM_MOTORS];
+volatile uint32_t flap_set;
+volatile bool flap_changed = false;
 
-static bool can_write_pwm = false;
-static bool can_read_temp_sensor = false;
-static uint16_t can_id;
-static float pwm_duty;
+float sen_temp;
+float sen_humid;
+float sen_ec;
 
-// TODO: fix the pin numbers; current ones are guesses
-PwmOut* elevator_pwm_pin        = new PwmOut(PB_13);
-PwmOut* drill_pwm_pin           = new PwmOut(PB_14);
-PwmOut* temp_pwm_pin            = new PwmOut(PB_15);
-PwmOut* flap_pwm_pin            = new PwmOut(PB_15);
+volatile float elevator_pwm_ready = false; //need this because its a joystick
 
-DigitalOut* elevator_dir_pin    = new DigitalOut(PC_6);
-DigitalOut* drill_dir_pin       = new DigitalOut(PC_7);
-DigitalOut* temp_dir_pin        = new DigitalOut(PC_8);
-DigitalOut* flap_dir_pin        = new DigitalOut(PC_9);
+Serial pc(PC_10, PC_11);
+Servo flap_servo(PB_13);
+DigitalOut led(PC_0);
 
-static PwmOut* pwm_out_vector[NUM_MODULES] = {elevator_pwm_pin,
-                                              drill_pwm_pin,
-                                              temp_pwm_pin,
-                                              flap_pwm_pin};
+PwmOut* elevator_pwm_pin        = new PwmOut(PC_9); //bottom motor controller, pwm4
+PwmOut* drill_pwm_pin           = new PwmOut(PC_7); //middle motor controller, pwm3
+PwmOut* probe_pwm_pin           = new PwmOut(PB_15); //top motor controller, pwm2
 
-static DigitalOut* digital_out_vector[NUM_MODULES] = {elevator_dir_pin,
-                                                      drill_dir_pin,
-                                                      temp_dir_pin,
-                                                      flap_dir_pin};
+DigitalOut* elevator_dir_pin    = new DigitalOut(PA_8);
+DigitalOut* drill_dir_pin       = new DigitalOut(PC_8);
+DigitalOut* probe_dir_pin       = new DigitalOut(PC_6);
 
+static PwmOut* pwm_out_vector[NUM_MOTORS] = {
+    elevator_pwm_pin,
+    drill_pwm_pin,
+    probe_pwm_pin};
+
+static DigitalOut* digital_out_vector[NUM_MOTORS] = {
+    elevator_dir_pin,
+    drill_dir_pin,
+    probe_dir_pin};
 /*
  *  Controls for each instrument.
  *  Positive float is high and negative float is low.
@@ -78,38 +87,7 @@ static DigitalOut* digital_out_vector[NUM_MODULES] = {elevator_dir_pin,
 void control_modules(float pwm_duty, uint16_t module_id)
 {
     pwm_out_vector[module_id]->write(fabs(pwm_duty));
-    *digital_out_vector[module_id] = (pwm_duty >= 0);
-}
-
-const char am2315_temp_humidity_sensor = 0xB8;
-
-/*
- * Get temp/humidity sensor readings from i2c
- */
-uint32_t get_temp_humidity_sensor_reading()
-{
-    char sensor_cmd[4] = {0};
-    uint32_t *sensor_data;
-    
-    // Host to sensor read temp and humidity data
-    sensor_cmd[0] = 0x03;
-    sensor_cmd[1] = 0x00;
-    sensor_cmd[2] = 0x04;
-    i2c.write(am2315_temp_humidity_sensor, sensor_cmd, 3);
-
-    // Tell sensor to prep sensor data
-    sensor_cmd[0] = 0x03;
-    sensor_cmd[1] = 0x04;
-    i2c.write(am2315_temp_humidity_sensor, sensor_cmd, 2);
-
-    wait(0.5);
-
-    // Read data from sensor
-    memset(sensor_cmd, 0, sizeof(sensor_cmd)/sizeof(sensor_cmd[0]));
-    i2c.read(am2315_temp_humidity_sensor, sensor_cmd, 4);
-
-    sensor_data = (uint32_t*) &sensor_cmd[0];
-    return *sensor_data;
+    *digital_out_vector[module_id] = (pwm_duty <= 0);
 }
 
 /*
@@ -117,71 +95,94 @@ uint32_t get_temp_humidity_sensor_reading()
  */
 void CANLIB_Rx_OnMessageReceived(void)
 {
-    can_id = CANLIB_Rx_GetSenderID();
-    switch(can_id){
-        case elevator_pwm_filter_ID:
-        case drill_pwm_filter_ID:
-        case temp_pwm_filter_ID:
-        case flap_pwm_filter_ID:
-            pwm_duty = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0);
-            can_write_pwm = true;
-            break;
-        case temp_humidity_filter_ID:
-            can_read_temp_sensor = true;
-            break;
+    uint16_t can_id = CANLIB_Rx_GetSenderID();
+
+    if(can_id == READ_SENSOR_ID) {
+        uint32_t sensor_to_read = CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);
+        if(sensor_to_read == EC_SENSOR) can_read_ec_sensor = true;
+        else if (sensor_to_read == TEMP_HUMID_SENSOR) can_read_temp_sensor = true;
+    }
+    if(can_id == MOTOR_ID[ELEVATOR]) {
+        elevator_pwm_ready = true;
+    }
+    if(can_id == MOTOR_ID[ELEVATOR] || can_id == MOTOR_ID[DRILL] || can_id == MOTOR_ID[PROBE]) {
+        pwm_duty[can_id - MOTOR_ID[0]] = CANLIB_Rx_GetAsFloat(CANLIB_INDEX_0);
+    }
+    if (can_id == FLAP_ID){ 
+        flap_set = CANLIB_Rx_GetAsUint(CANLIB_INDEX_0);
+        flap_changed = true;
     }
 }
 
-module_ids_t init_modules[INIT_VECTOR_SIZE] = {elevator_pwm_filter_ID,
-                                                drill_pwm_filter_ID,
-                                                temp_pwm_filter_ID,
-                                                flap_pwm_filter_ID,
-                                                temp_humidity_filter_ID};
-
 int main()
 {
-    uint32_t temp_humidity_sensor_reading;
-    float temp_reading;
-    float humidity_reading;
+    led = 1;
     /*
      * Initialize CAN for pwm
      */
-    if (CANLIB_Init(elevator_pwm_ID, CANLIB_LOOPBACK_OFF) != 0)
+    if (CANLIB_Init(SENSOR_OUT_ID[0], CANLIB_LOOPBACK_OFF) != 0)
     {
         pc.printf("CAN Initialization Failed\r\n");
     }
 
-    for(int i = 0; i < INIT_VECTOR_SIZE; i++)
+    for(int i = 0; i < NUM_MOTORS; i++)
     {
-        if (CANLIB_AddFilter(init_modules[i]) != 0)
+        if (CANLIB_AddFilter(MOTOR_ID[i]) != 0)
         {
-            pc.printf("CAN Add Filter Failed on Filter: %u \r\n", init_modules[i]);
+            pc.printf("CAN Add Filter Failed on Filter: %u \r\n", MOTOR_ID[i]);
         }
     }
+    if (CANLIB_AddFilter(FLAP_ID) != 0)
+    {
+        pc.printf("CAN Add Filter Failed on Filter FLAP_ID\r\n");
+    }
+    if (CANLIB_AddFilter(READ_SENSOR_ID) != 0)
+    {
+        pc.printf("CAN Add Filter Failed on Filter READ_SENSOR_ID\r\n");
+    }
 
-    /*
-     * Loop
-     */
     while(1)
     {
-        if(can_write_pwm)
+        if(elevator_pwm_ready)
         {
-            control_modules(pwm_duty, can_id % science_module_pwm_filter);
-            can_write_pwm = false;
+            control_modules(pwm_duty[ELEVATOR], ELEVATOR);
+            elevator_pwm_ready = false;
+        }
+
+        //buttons will only send once
+        control_modules(pwm_duty[DRILL], DRILL);
+        control_modules(pwm_duty[PROBE], PROBE);
+
+        if(flap_changed)
+        {
+            if(flap_set == 0)
+            {
+                flap_servo = FLAP_CLOSED;
+            }
+            else
+            {
+                flap_servo = FLAP_OPEN;
+            }
+            flap_changed = false;
+        }
+
+        if(can_read_ec_sensor)
+        {
+            CANLIB_ChangeID(SENSOR_OUT_ID[EC_SENSOR]);
+            CANLIB_Tx_SetFloat(sen_ec, CANLIB_INDEX_0);
+            CANLIB_Tx_SendData(CANLIB_DLC_FOUR_BYTES);
+            can_read_ec_sensor = false;
         }
         if(can_read_temp_sensor)
         {
-            temp_humidity_sensor_reading = get_temp_humidity_sensor_reading();
-            temp_reading = (float) (temp_humidity_sensor_reading & 0xFF);
-            humidity_reading = (float) ((temp_humidity_sensor_reading >> 8) & 0xFF);
-
             // CAN msg to PC
-            CANLIB_ChangeID(temp_humidity_sensor_val);
-            CANLIB_Tx_SetFloat(temp_reading, CANLIB_INDEX_0);
-            CANLIB_Tx_SetFloat(humidity_reading, CANLIB_INDEX_1);
+            CANLIB_ChangeID(SENSOR_OUT_ID[TEMP_HUMID_SENSOR]);
+            CANLIB_Tx_SetFloat(sen_temp, CANLIB_INDEX_0);
+            CANLIB_Tx_SetFloat(sen_humid, CANLIB_INDEX_1);
             CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
             can_read_temp_sensor = false;
         }
+        wait_ms(50); //run at 20Hz
     }
 }
 #ifdef __cplusplus
