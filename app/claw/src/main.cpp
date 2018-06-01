@@ -21,6 +21,7 @@ Serial pc(PC_10, PC_11);
 PwmOut claw_pwm(PA_9);
 DigitalOut claw_dir(PA_8);
 QEI claw_enc(PB_0, PB_1, PB_2, 600);
+DigitalOut led(PC_0);
 
 Ticker tick;
 const uint32_t MOTOR_ID = 405;
@@ -100,9 +101,9 @@ int main()
     {
         pc.printf("add filter failed\r\n");
     }
-
-    reset_claw();
-    tick.attach(&encoderSend, 1.0);
+    led = 1;
+    //reset_claw();
+    tick.attach(&encoderSend, 2.0);
 
     while(1)
     {

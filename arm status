@@ -1,0 +1,20 @@
+when we moved elbow wrist pitch moved
+when we moved wrist pitch moved wrist roll
+shoulder PWM doesn't work -> direction does
+labeled as turntable direction doesn't work, turntable PWM signal left trigger works, right trigger doesn't
+
+pwm1 - turntable - bottom large motor controller
+pwm2/6 - shoulder - top large motor contorller
+pwm3 - elbow - top smaller motor controller channel 2
+pwm4 - wrist pitch - bottom smaller motor controller channel 1
+pwm5 - wrist roll - top smaller motor controller channel 1
+
+pwm(end effector) - claw - bottom small motor controller channel 2
+
+
+shoulder PWM doesn't work
+turntable works
+elbow works
+wrist roll works
+wrist pitch works
+claw works

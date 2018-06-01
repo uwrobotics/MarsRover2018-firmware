@@ -20,7 +20,7 @@ extern "C" {
 #include "canlib.h"
 #include "pins.h"
 
-DigitalOut led1(LED1);
+DigitalOut led1(PC_0);
 Serial pc(USBTX, USBRX);
 
 int main()

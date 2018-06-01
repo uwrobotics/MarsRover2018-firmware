@@ -1,6 +1,7 @@
 #include "mbed.h"
 
-Serial pc(USBTX, USBRX);
+DigitalOut led(PC_0);
+Serial pc(PC_10, PC_11);
 
 // main() runs in its own thread in the OS
 int main() {
@@ -9,6 +10,7 @@ int main() {
         pc.printf("Hello World! %d\r\n", i);
         i++;
         wait(0.5);
+        led = i % 2;
     }
 }
 
