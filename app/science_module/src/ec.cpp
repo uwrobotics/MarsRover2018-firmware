@@ -7,7 +7,7 @@
 #define RESISTOR_2_VALUE 300
 #define VOLTAGE_DIVIDER (float)(RESISTOR_2_VALUE / (RESISTOR_1_VALUE + RESISTOR_2_VALUE))
 
-AnalogIn ecSensor(A0); // EC Sensor Pin
+AnalogIn ecSensor(PA_5); // EC Sensor Pin
 
 // Returns the electrical conductivity in ms/cm
 float getEC(float temp) { // TODO: Move numbers into constants

@@ -6,8 +6,8 @@
 #include "temperature.h"
 
 
-I2C i2c(I2C_SDA, I2C_SCL);
-Serial pc1(USBTX, USBRX);
+I2C i2c(PB_7, PB_6);
+Serial pc1(PC_10, PC_11);
 static const char am2315_temp_humidity_sensor = 0xB8;
 
 

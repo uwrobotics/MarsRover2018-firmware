@@ -61,16 +61,16 @@ float sen_ec;
 volatile float elevator_pwm_ready = false; //need this because its a joystick
 
 Serial pc(PC_10, PC_11);
-Servo flap_servo(PB_13);
+Servo flap_servo(PC_9);
 DigitalOut led(PC_0);
 
-PwmOut* elevator_pwm_pin        = new PwmOut(PC_9); //bottom motor controller, pwm4
-PwmOut* drill_pwm_pin           = new PwmOut(PC_7); //middle motor controller, pwm3
-PwmOut* probe_pwm_pin           = new PwmOut(PB_15); //top motor controller, pwm2
+PwmOut* elevator_pwm_pin        = new PwmOut(PA_11); //bottom motor controller, pwm4
+PwmOut* drill_pwm_pin           = new PwmOut(PB_13); //middle motor controller, pwm3
+PwmOut* probe_pwm_pin           = new PwmOut(PC_7); //top motor controller, pwm2
 
-DigitalOut* elevator_dir_pin    = new DigitalOut(PA_8);
-DigitalOut* drill_dir_pin       = new DigitalOut(PC_8);
-DigitalOut* probe_dir_pin       = new DigitalOut(PC_6);
+DigitalOut* elevator_dir_pin    = new DigitalOut(PA_12);
+DigitalOut* drill_dir_pin       = new DigitalOut(PB_14);
+DigitalOut* probe_dir_pin       = new DigitalOut(PC_8);
 
 static PwmOut* pwm_out_vector[NUM_MOTORS] = {
     elevator_pwm_pin,
@@ -114,7 +114,14 @@ void CANLIB_Rx_OnMessageReceived(void)
         flap_changed = true;
     }
 }
-
+void can_send_test()
+{
+    int a = 123;
+    CANLIB_ChangeID(100);
+    CANLIB_Tx_SetInt(a, CANLIB_INDEX_0);
+    CANLIB_Tx_SendData(CANLIB_DLC_FOUR_BYTES);
+}
+Ticker test;
 int main()
 {
     led = 1;
@@ -142,6 +149,7 @@ int main()
         pc.printf("CAN Add Filter Failed on Filter READ_SENSOR_ID\r\n");
     }
 
+    test.attach(can_send_test, 1.0);
     while(1)
     {
         if(elevator_pwm_ready)

@@ -20,20 +20,26 @@ extern "C" {
 #include "canlib.h"
 #include "pins.h"
 
-DigitalOut led1(LED1);
-Serial pc(USBTX, USBRX);
+DigitalOut led1(PC_0);
+DigitalOut led2(PC_1);
+DigitalOut led3(PC_2);
+DigitalOut led4(PC_3);
+Serial pc(PC_10, PC_11);
 
 int main()
 {
+    led1 = led2 = led3 = led4;
     pc.printf("start listening\r\n");
     
     if (CANLIB_Init(20, 0) != 0)
     {
         pc.printf("init failed\r\n");
+        led1 = 1;
     }
     if (CANLIB_AddFilter(500) != 0)
     {
         pc.printf("add filter failed\r\n");
+        led2 = 1;
     }
 
 int counter = 0;
@@ -50,8 +56,12 @@ int counter = 0;
         CANLIB_ChangeID(302);
         CANLIB_Tx_SetInt(counter, CANLIB_INDEX_0);
         CANLIB_Tx_SendData(CANLIB_DLC_ALL_BYTES);
-        wait(0.2);
+        wait_ms(500);
         counter++;
+
+        if(counter % 2) led3 = 1;
+        else led3 = 0;
+
     }
 }
 
